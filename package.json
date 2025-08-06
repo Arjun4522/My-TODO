@@ -1,0 +1,17 @@
+{
+  "name": "calendar-todo-app",
+  "version": "1.0.0",
+  "description": "Electron-based calendar to-do app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --no-sandbox --disable-gpu",
+    "start-safe": "electron . --no-sandbox --disable-gpu-sandbox --disable-dev-shm-usage",
+    "dev": "electron . --no-sandbox --disable-gpu --enable-logging"
+  },
+  "keywords": [],
+  "author": "Arjun Ghoshal",
+  "license": "MIT",
+  "devDependencies": {
+    "electron-builder": "^26.0.12"
+  }
+}

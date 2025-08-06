@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Enhanced Calendar To-Do App</title>
+  <style>
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      min-height: 100vh;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 800px;
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #1e293b;
+      font-size: 2.25rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+    }
+
+    .date-section {
+      margin-bottom: 32px;
+    }
+
+    #calendar {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      transition: all 0.2s ease;
+      outline: none;
+      color: #374151;
+    }
+
+    #calendar:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .task-input-section {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+
+    #task-input {
+      flex: 1;
+      padding: 16px;
+      font-size: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      outline: none;
+      transition: all 0.2s ease;
+      color: #374151;
+    }
+
+    #task-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    #add-task {
+      padding: 16px 24px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    #add-task:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    #add-task:active {
+      transform: translateY(0);
+    }
+
+    .task-list-section {
+      min-height: 200px;
+    }
+
+    .task-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .selected-date {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .task-count {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    #todo-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .task-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .task-item:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e0;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .task-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .task-checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 2px solid #cbd5e0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .task-checkbox.completed {
+      background: #10b981;
+      border-color: #10b981;
+    }
+
+    .task-checkbox.completed::after {
+      content: '✓';
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .task-text.completed {
+      text-decoration: line-through;
+      color: #9ca3af;
+    }
+
+    .task-time {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .delete-btn {
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .delete-btn:hover {
+      background: #dc2626;
+      transform: scale(1.05);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: #9ca3af;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1e293b;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📅 My Tasks</h1>
+    
+    <div class="date-section">
+      <input type="date" id="calendar">
+    </div>
+
+    <div class="stats">
+      <div class="stat-item">
+        <div class="stat-number" id="total-tasks">0</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="completed-tasks">0</div>
+        <div class="stat-label">Completed</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="remaining-tasks">0</div>
+        <div class="stat-label">Remaining</div>
+      </div>
+    </div>
+
+    <div class="task-input-section">
+      <input type="text" id="task-input" placeholder="What needs to be done?">
+      <button id="add-task">Add Task</button>
+    </div>
+
+    <div class="task-list-section">
+      <div class="task-list-header">
+        <div class="selected-date" id="selected-date">Today's Tasks</div>
+        <div class="task-count" id="task-count">0 tasks</div>
+      </div>
+      <ul id="todo-list"></ul>
+    </div>
+  </div>
+
+  <script>
+    class TodoApp {
+      constructor() {
+        this.calendar = document.getElementById('calendar');
+        this.taskInput = document.getElementById('task-input');
+        this.addTaskButton = document.getElementById('add-task');
+        this.todoList = document.getElementById('todo-list');
+        this.selectedDate = document.getElementById('selected-date');
+        this.taskCount = document.getElementById('task-count');
+        this.totalTasks = document.getElementById('total-tasks');
+        this.completedTasks = document.getElementById('completed-tasks');
+        this.remainingTasks = document.getElementById('remaining-tasks');
+        
+        // Use in-memory storage instead of localStorage
+        this.tasks = {};
+        
+        this.init();
+      }
+
+      init() {
+        // Set default date to today
+        this.calendar.valueAsDate = new Date();
+        
+        // Event listeners
+        this.addTaskButton.addEventListener('click', () => this.addTask());
+        this.taskInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter') this.addTask();
+        });
+        this.calendar.addEventListener('change', () => this.updateView());
+        
+        // Initial view update
+        this.updateView();
+      }
+
+      addTask() {
+        const dateStr = this.calendar.value;
+        const taskText = this.taskInput.value.trim();
+
+        if (!dateStr || !taskText) return;
+
+        if (!this.tasks[dateStr]) {
+          this.tasks[dateStr] = [];
+        }
+
+        const task = {
+          id: Date.now(),
+          text: taskText,
+          completed: false,
+          createdAt: new Date().toLocaleTimeString()
+        };
+
+        this.tasks[dateStr].push(task);
+        this.taskInput.value = '';
+        this.updateView();
+      }
+
+      deleteTask(dateStr, taskId) {
+        if (this.tasks[dateStr]) {
+          this.tasks[dateStr] = this.tasks[dateStr].filter(task => task.id !== taskId);
+          this.updateView();
+        }
+      }
+
+      toggleTask(dateStr, taskId) {
+        if (this.tasks[dateStr]) {
+          const task = this.tasks[dateStr].find(task => task.id === taskId);
+          if (task) {
+            task.completed = !task.completed;
+            this.updateView();
+          }
+        }
+      }
+
+      updateView() {
+        const dateStr = this.calendar.value;
+        const dateTasks = this.tasks[dateStr] || [];
+        
+        // Update date display
+        const date = new Date(dateStr + 'T00:00:00');
+        const today = new Date();
+        let dateLabel;
+        
+        if (date.toDateString() === today.toDateString()) {
+          dateLabel = "Today's Tasks";
+        } else if (date.toDateString() === new Date(today.getTime() + 86400000).toDateString()) {
+          dateLabel = "Tomorrow's Tasks";
+        } else {
+          dateLabel = date.toLocaleDateString('en-US', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+        }
+        
+        this.selectedDate.textContent = dateLabel;
+        this.taskCount.textContent = `${dateTasks.length} task${dateTasks.length !== 1 ? 's' : ''}`;
+        
+        // Update task list
+        this.todoList.innerHTML = '';
+        
+        if (dateTasks.length === 0) {
+          this.todoList.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📝</div>
+              <div>No tasks for this date</div>
+              <div style="font-size: 14px; margin-top: 5px;">Add a task above to get started!</div>
+            </div>
+          `;
+        } else {
+          dateTasks.forEach(task => {
+            const li = document.createElement('li');
+            li.className = 'task-item';
+            li.innerHTML = `
+              <div class="task-content">
+                <div class="task-checkbox ${task.completed ? 'completed' : ''}" 
+                     onclick="todoApp.toggleTask('${dateStr}', ${task.id})"></div>
+                <div class="task-text ${task.completed ? 'completed' : ''}">${task.text}</div>
+                <div class="task-time">${task.createdAt}</div>
+              </div>
+              <button class="delete-btn" onclick="todoApp.deleteTask('${dateStr}', ${task.id})">×</button>
+            `;
+            this.todoList.appendChild(li);
+          });
+        }
+        
+        // Update stats
+        const completed = dateTasks.filter(task => task.completed).length;
+        const total = dateTasks.length;
+        const remaining = total - completed;
+        
+        this.totalTasks.textContent = total;
+        this.completedTasks.textContent = completed;
+        this.remainingTasks.textContent = remaining;
+      }
+    }
+
+    // Initialize the app
+    const todoApp = new TodoApp();
+  </script>
+</body>
+</html>
