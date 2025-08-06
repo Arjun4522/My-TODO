@@ -18,6 +18,7 @@
             pkgs.electron
             pkgs.git
             pkgs.nodePackages.npm
+            pkgs.wine64
           ];
           shellHook = ''
             echo "✔ Electron Dev Shell Ready"

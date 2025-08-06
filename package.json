@@ -1,17 +1,21 @@
 {
   "name": "calendar-todo-app",
   "version": "1.0.0",
-  "description": "Electron-based calendar to-do app",
+  "description": "Professional Calendar To-Do App",
   "main": "main.js",
+  "author": "Arjun Ghoshal",
+  "license": "MIT",
   "scripts": {
     "start": "electron . --no-sandbox --disable-gpu",
     "start-safe": "electron . --no-sandbox --disable-gpu-sandbox --disable-dev-shm-usage",
-    "dev": "electron . --no-sandbox --disable-gpu --enable-logging"
+    "dev": "electron . --no-sandbox --disable-gpu --enable-logging",
+    "build-win": "electron-packager . calendar-todo-app --platform=win32 --arch=x64 --out=dist/ --overwrite --no-prune --ignore=node_modules --ignore=dist --ignore=.git",
+    "build-linux": "electron-packager . calendar-todo-app --platform=linux --arch=x64 --out=dist/ --overwrite --no-prune --ignore=node_modules --ignore=dist --ignore=.git",
+    "build-all": "npm run build-win && npm run build-linux",
+    "pack-win-portable": "electron-packager . 'Calendar Todo App' --platform=win32 --arch=x64 --out=dist/ --overwrite --asar --app-version=1.0.0 --win32metadata.ProductName='Calendar Todo App' --win32metadata.CompanyName='Arjun Ghoshal'"
   },
-  "keywords": [],
-  "author": "Arjun Ghoshal",
-  "license": "MIT",
   "devDependencies": {
-    "electron-builder": "^26.0.12"
+    "electron": "^29.4.0",
+    "electron-packager": "^17.1.1"
   }
 }
