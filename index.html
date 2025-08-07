@@ -35,6 +35,29 @@
       letter-spacing: -0.025em;
     }
 
+    .save-status {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 16px;
+      background: #10b981;
+      color: white;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1000;
+    }
+
+    .save-status.show {
+      opacity: 1;
+    }
+
+    .save-status.error {
+      background: #ef4444;
+    }
+
     .tabs {
       display: flex;
       margin-bottom: 32px;
@@ -618,9 +641,141 @@
       font-size: 12px;
       font-weight: bold;
     }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 32px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      animation: slideInModal 0.3s ease;
+    }
+
+    .modal-header {
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 0;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-input {
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #374151;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .modal-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .modal-textarea {
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #374151;
+      outline: none;
+      transition: all 0.2s ease;
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+
+    .modal-textarea:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+
+    .modal-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .modal-btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .modal-btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .modal-btn-secondary {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .modal-btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideInModal {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   </style>
 </head>
 <body>
+  <div class="save-status" id="save-status"></div>
+  
   <div class="container">
     <h1>📅 My Tasks</h1>
     
@@ -742,6 +897,23 @@
     </div>
   </div>
 
+  <!-- Edit Task Modal -->
+  <div id="edit-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Edit Task</h3>
+      </div>
+      <form class="modal-form">
+        <input type="text" id="edit-title" class="modal-input" placeholder="Task title">
+        <textarea id="edit-description" class="modal-textarea" placeholder="Task description (optional)"></textarea>
+      </form>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn modal-btn-secondary" onclick="closeEditModal()">Cancel</button>
+        <button type="button" class="modal-btn modal-btn-primary" onclick="saveEditedTask()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     class TodoApp {
       constructor() {
@@ -756,21 +928,31 @@
         this.completedTasks = document.getElementById('completed-tasks');
         this.remainingTasks = document.getElementById('remaining-tasks');
         this.summaryTableBody = document.getElementById('summary-table-body');
+        this.saveStatus = document.getElementById('save-status');
+        
+        // Edit modal elements
+        this.editModal = document.getElementById('edit-modal');
+        this.editTitle = document.getElementById('edit-title');
+        this.editDescription = document.getElementById('edit-description');
+        this.currentEditTask = null;
         
         // Pagination properties
         this.currentPage = 1;
         this.pageSize = 25;
         this.filteredTasks = [];
         
-        // Load data with persistence
-        this.loadData();
+        // Initialize tasks object
+        this.tasks = {};
         
         this.init();
       }
 
-      init() {
+      async init() {
         // Set default date to today
         this.calendar.valueAsDate = new Date();
+        
+        // Load data from CSV on startup
+        await this.loadDataFromCSV();
         
         // Event listeners
         this.addTaskButton.addEventListener('click', () => this.addTask());
@@ -782,17 +964,98 @@
         });
         this.calendar.addEventListener('change', () => this.updateView());
         
-        // Auto-save every 30 seconds
-        setInterval(() => this.saveData(), 30000);
+        // Modal event listeners
+        this.editModal.addEventListener('click', (e) => {
+          if (e.target === this.editModal) {
+            this.closeEditModal();
+          }
+        });
         
-        // Save data when page is about to close
-        window.addEventListener('beforeunload', () => this.saveData());
+        // Set up Electron IPC listeners if available
+        if (window.electronAPI) {
+          window.electronAPI.onRequestSave(() => {
+            this.saveDataToCSV();
+          });
+          
+          window.electronAPI.onRequestFinalSave(() => {
+            this.saveDataToCSV().then(() => {
+              // Data saved, app can close now
+            });
+          });
+        }
+        
+        // Auto-save every 30 seconds (fallback for browser)
+        setInterval(() => this.autoSave(), 30000);
+        
+        // Save data when page is about to close (browser fallback)
+        window.addEventListener('beforeunload', () => this.autoSave());
         
         // Initial view update
         this.updateView();
         this.updateSummaryTable();
       }
 
+      async loadDataFromCSV() {
+        try {
+          if (window.electronAPI) {
+            // Electron environment - use IPC
+            const result = await window.electronAPI.loadTasksCSV();
+            if (result.success) {
+              this.tasks = result.data;
+              this.showSaveStatus('Data loaded from CSV', 'success');
+            } else {
+              console.error('Error loading CSV:', result.error);
+              this.tasks = {};
+            }
+          } else {
+            // Browser fallback - use localStorage
+            this.loadData();
+          }
+        } catch (error) {
+          console.error('Error loading data from CSV:', error);
+          this.tasks = {};
+        }
+      }
+
+      async saveDataToCSV() {
+        try {
+          if (window.electronAPI) {
+            // Electron environment - use IPC to save CSV
+            const result = await window.electronAPI.saveTasksCSV(this.tasks);
+            if (result.success) {
+              this.showSaveStatus('Data saved to CSV', 'success');
+            } else {
+              this.showSaveStatus('Error saving data', 'error');
+              console.error('Error saving CSV:', result.error);
+            }
+          } else {
+            // Browser fallback - use localStorage
+            this.saveData();
+            this.showSaveStatus('Data saved locally', 'success');
+          }
+        } catch (error) {
+          console.error('Error saving data to CSV:', error);
+          this.showSaveStatus('Error saving data', 'error');
+        }
+      }
+
+      autoSave() {
+        // Only auto-save in browser mode (Electron handles its own save timing)
+        if (!window.electronAPI) {
+          this.saveData();
+        }
+      }
+
+      showSaveStatus(message, type = 'success') {
+        this.saveStatus.textContent = message;
+        this.saveStatus.className = `save-status ${type} show`;
+        
+        setTimeout(() => {
+          this.saveStatus.classList.remove('show');
+        }, 3000);
+      }
+
+      // Browser fallback methods
       loadData() {
         try {
           const savedData = localStorage.getItem('todoAppData');
@@ -815,7 +1078,7 @@
         }
       }
 
-      addTask() {
+      async addTask() {
         const dateStr = this.calendar.value;
         const taskTitle = this.taskTitle.value.trim();
         const taskBody = this.taskBody.value.trim();
@@ -837,29 +1100,32 @@
         this.tasks[dateStr].push(task);
         this.taskTitle.value = '';
         this.taskBody.value = '';
-        this.saveData();
+        
+        // Save immediately when task is added
+        await this.saveDataToCSV();
+        
         this.updateView();
         this.updateSummaryTable();
       }
 
-      deleteTask(dateStr, taskId) {
+      async deleteTask(dateStr, taskId) {
         if (this.tasks[dateStr]) {
           this.tasks[dateStr] = this.tasks[dateStr].filter(task => task.id !== taskId);
           if (this.tasks[dateStr].length === 0) {
             delete this.tasks[dateStr];
           }
-          this.saveData();
+          await this.saveDataToCSV();
           this.updateView();
           this.updateSummaryTable();
         }
       }
 
-      toggleTask(dateStr, taskId) {
+      async toggleTask(dateStr, taskId) {
         if (this.tasks[dateStr]) {
           const task = this.tasks[dateStr].find(task => task.id === taskId);
           if (task) {
             task.completed = !task.completed;
-            this.saveData();
+            await this.saveDataToCSV();
             this.updateView();
             this.updateSummaryTable();
           }
@@ -1020,7 +1286,7 @@
             <td>${task.createdAt}</td>
             <td>
               <div class="action-buttons">
-                <button class="edit-btn" onclick="todoApp.editTask('${task.dateStr}', ${task.id})">Edit</button>
+                <button class="edit-btn" onclick="todoApp.openEditModal('${task.dateStr}', ${task.id})">Edit</button>
                 <button class="delete-btn" onclick="todoApp.deleteTaskFromSummary('${task.dateStr}', ${task.id})">Delete</button>
               </div>
             </td>
@@ -1143,34 +1409,54 @@
         }
       }
 
-      toggleTaskFromSummary(dateStr, taskId) {
-        this.toggleTask(dateStr, taskId);
+      async toggleTaskFromSummary(dateStr, taskId) {
+        await this.toggleTask(dateStr, taskId);
       }
 
-      editTask(dateStr, taskId) {
+      // New modal-based edit functionality
+      openEditModal(dateStr, taskId) {
         if (this.tasks[dateStr]) {
           const task = this.tasks[dateStr].find(task => task.id === taskId);
           if (task) {
-            const newTitle = prompt('Edit task title:', task.title);
-            if (newTitle !== null && newTitle.trim() !== '') {
-              task.title = newTitle.trim();
-              
-              const newBody = prompt('Edit task description:', task.body || '');
-              if (newBody !== null) {
-                task.body = newBody.trim();
-              }
-              
-              this.saveData();
-              this.updateView();
-              this.updateSummaryTable();
-            }
+            this.currentEditTask = { dateStr, taskId };
+            this.editTitle.value = task.title;
+            this.editDescription.value = task.body || '';
+            this.editModal.classList.add('show');
+            this.editTitle.focus();
           }
         }
       }
 
-      deleteTaskFromSummary(dateStr, taskId) {
+      closeEditModal() {
+        this.editModal.classList.remove('show');
+        this.currentEditTask = null;
+        this.editTitle.value = '';
+        this.editDescription.value = '';
+      }
+
+      async saveEditedTask() {
+        if (!this.currentEditTask) return;
+        
+        const newTitle = this.editTitle.value.trim();
+        if (!newTitle) return;
+        
+        const { dateStr, taskId } = this.currentEditTask;
+        const task = this.tasks[dateStr].find(task => task.id === taskId);
+        
+        if (task) {
+          task.title = newTitle;
+          task.body = this.editDescription.value.trim();
+          
+          await this.saveDataToCSV();
+          this.updateView();
+          this.updateSummaryTable();
+          this.closeEditModal();
+        }
+      }
+
+      async deleteTaskFromSummary(dateStr, taskId) {
         if (confirm('Are you sure you want to delete this task?')) {
-          this.deleteTask(dateStr, taskId);
+          await this.deleteTask(dateStr, taskId);
         }
       }
 
@@ -1187,11 +1473,11 @@
         URL.revokeObjectURL(url);
       }
 
-      importData(event) {
+      async importData(event) {
         const file = event.target.files[0];
         if (file) {
           const reader = new FileReader();
-          reader.onload = (e) => {
+          reader.onload = async (e) => {
             try {
               const importedTasks = JSON.parse(e.target.result);
               // Merge with existing tasks
@@ -1205,7 +1491,7 @@
                 });
                 this.tasks[dateStr] = [...this.tasks[dateStr], ...importedTasks[dateStr]];
               });
-              this.saveData();
+              await this.saveDataToCSV();
               this.updateView();
               this.updateSummaryTable();
               alert('Data imported successfully!');
@@ -1218,10 +1504,10 @@
         event.target.value = ''; // Reset file input
       }
 
-      clearAllData() {
+      async clearAllData() {
         if (confirm('Are you sure you want to delete all tasks? This action cannot be undone.')) {
           this.tasks = {};
-          this.saveData();
+          await this.saveDataToCSV();
           this.updateView();
           this.updateSummaryTable();
         }
@@ -1246,12 +1532,12 @@
       todoApp.exportData();
     }
 
-    function importData(event) {
-      todoApp.importData(event);
+    async function importData(event) {
+      await todoApp.importData(event);
     }
 
-    function clearAllData() {
-      todoApp.clearAllData();
+    async function clearAllData() {
+      await todoApp.clearAllData();
     }
 
     function updateSummaryTable() {
@@ -1260,6 +1546,14 @@
 
     function changePageSize() {
       todoApp.changePageSize();
+    }
+
+    function closeEditModal() {
+      todoApp.closeEditModal();
+    }
+
+    function saveEditedTask() {
+      todoApp.saveEditedTask();
     }
 
     // Initialize the app
