@@ -3,7 +3,867 @@
 <head>
   <meta charset="UTF-8">
   <title>Enhanced Calendar To-Do App</title>
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    * { box-sizing: border-box; }
+    
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f8fafc;
+      min-height: 100vh;
+      color: #334155;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 40px;
+      color: #1e293b;
+      font-size: 2.25rem;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+    }
+
+    .save-status {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 8px 16px;
+      background: #10b981;
+      color: white;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      z-index: 1000;
+    }
+
+    .save-status.show {
+      opacity: 1;
+    }
+
+    .save-status.error {
+      background: #ef4444;
+    }
+
+    .tabs {
+      display: flex;
+      margin-bottom: 32px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      background: none;
+      border: none;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      color: #64748b;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .tab.active {
+      color: #3b82f6;
+      border-bottom-color: #3b82f6;
+    }
+
+    .tab:hover {
+      color: #3b82f6;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* Daily View Layout */
+    .daily-layout {
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 32px;
+      margin-bottom: 32px;
+    }
+
+    .left-column {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .right-column {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .date-section {
+      margin-bottom: 32px;
+    }
+
+    #calendar {
+      width: 100%;
+      padding: 16px;
+      font-size: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      background: white;
+      transition: all 0.2s ease;
+      outline: none;
+      color: #374151;
+    }
+
+    #calendar:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .task-input-section {
+      margin-bottom: 32px;
+    }
+
+    .task-input-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #f8fafc;
+      padding: 20px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+    }
+
+    #task-title {
+      padding: 16px;
+      font-size: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      outline: none;
+      transition: all 0.2s ease;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    #task-title:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    #task-body {
+      padding: 16px;
+      font-size: 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      outline: none;
+      transition: all 0.2s ease;
+      color: #374151;
+      resize: vertical;
+      min-height: 80px;
+      font-family: inherit;
+    }
+
+    #task-body:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .add-task-row {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    #add-task {
+      padding: 16px 24px;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    #add-task:hover {
+      background: #2563eb;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    #add-task:active {
+      transform: translateY(0);
+    }
+
+    .task-list-section {
+      min-height: 200px;
+    }
+
+    .task-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .selected-date {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+
+    .task-count {
+      background: #f1f5f9;
+      color: #475569;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    #todo-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .task-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .task-item:hover {
+      background: #f1f5f9;
+      border-color: #cbd5e0;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .task-content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .task-text {
+      flex: 1;
+      transition: all 0.3s ease;
+    }
+
+    .task-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .task-description {
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.4;
+    }
+
+    .task-time {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: #9ca3af;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.6;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .stat-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: #1e293b;
+    }
+
+    .stat-label {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Summary Layout - New Design */
+    .summary-layout {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 32px;
+      min-height: 600px;
+    }
+
+    .summary-sidebar {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 24px;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .summary-main {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-stats .stat-item {
+      padding: 16px;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .summary-stats .stat-number {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      color: #1e293b;
+    }
+
+    .summary-stats .stat-label {
+      font-size: 12px;
+      color: #64748b;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .data-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .export-btn, .import-btn {
+      padding: 12px 16px;
+      background: #10b981;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .export-btn:hover, .import-btn:hover {
+      background: #059669;
+      transform: translateY(-1px);
+    }
+
+    .clear-btn {
+      padding: 12px 16px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-weight: 500;
+    }
+
+    .clear-btn:hover {
+      background: #dc2626;
+      transform: translateY(-1px);
+    }
+
+    #import-file {
+      display: none;
+    }
+
+    .filter-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .filter-select {
+      padding: 8px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 6px;
+      background: white;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    .search-input {
+      padding: 8px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 6px;
+      background: white;
+      color: #374151;
+      font-size: 14px;
+    }
+
+    .search-input:focus, .filter-select:focus {
+      border-color: #3b82f6;
+      outline: none;
+    }
+
+    /* Summary Table Styles */
+    .summary-table-container {
+      overflow-x: auto;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 24px;
+      flex: 1;
+    }
+
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+    }
+
+    .summary-table th,
+    .summary-table td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+
+    .summary-table th {
+      background: #f8fafc;
+      font-weight: 600;
+      color: #374151;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .summary-table tr {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .summary-table tr:hover {
+      background: #f8fafc;
+    }
+
+    .summary-table tr.expanded {
+      background: #f1f5f9;
+    }
+
+    .task-summary-title {
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 4px;
+    }
+
+    .task-summary-preview {
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.4;
+      max-height: 40px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .task-summary-full {
+      font-size: 14px;
+      color: #6b7280;
+      line-height: 1.4;
+      margin-top: 8px;
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+      display: none;
+    }
+
+    .task-summary-full.expanded {
+      display: block;
+    }
+
+    .expand-indicator {
+      color: #9ca3af;
+      font-size: 12px;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-completed {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .date-badge {
+      background: #e0f2fe;
+      color: #0c4a6e;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    /* Pagination Styles */
+    .pagination-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 20px;
+      padding: 16px 0;
+    }
+
+    .pagination-info {
+      font-size: 14px;
+      color: #6b7280;
+    }
+
+    .pagination-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pagination-btn {
+      padding: 8px 12px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #374151;
+      transition: all 0.2s ease;
+    }
+
+    .pagination-btn:hover:not(:disabled) {
+      background: #e2e8f0;
+    }
+
+    .pagination-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .pagination-btn.active {
+      background: #3b82f6;
+      color: white;
+      border-color: #3b82f6;
+    }
+
+    .page-size-selector {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 16px;
+    }
+
+    .page-size-select {
+      padding: 4px 8px;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+    }
+
+    /* Edit/Delete buttons in summary */
+    .action-buttons {
+      display: flex;
+      gap: 4px;
+    }
+
+    .edit-btn, .delete-btn {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    .edit-btn {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .edit-btn:hover {
+      background: #2563eb;
+    }
+
+    .delete-btn {
+      background: #ef4444;
+      color: white;
+    }
+
+    .delete-btn:hover {
+      background: #dc2626;
+    }
+
+    .task-checkbox {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      border: 2px solid #cbd5e0;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .task-checkbox.completed {
+      background: #10b981;
+      border-color: #10b981;
+    }
+
+    .task-checkbox.completed::after {
+      content: '✓';
+      color: white;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 2000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 32px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      animation: slideInModal 0.3s ease;
+    }
+
+    .modal-header {
+      margin-bottom: 24px;
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: #1e293b;
+      margin: 0;
+    }
+
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-input {
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #374151;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .modal-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .modal-textarea {
+      padding: 12px 16px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #374151;
+      outline: none;
+      transition: all 0.2s ease;
+      resize: vertical;
+      min-height: 100px;
+      font-family: inherit;
+    }
+
+    .modal-textarea:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+
+    .modal-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .modal-btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .modal-btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .modal-btn-secondary {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .modal-btn-secondary:hover {
+      background: #e2e8f0;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideInModal {
+      from {
+        opacity: 0;
+        transform: translateY(-50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 768px) {
+      .daily-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      
+      .summary-layout {
+        grid-template-columns: 1fr;
+        gap: 24px;
+      }
+      
+      .summary-sidebar {
+        position: static;
+      }
+      
+      .stats {
+        grid-template-columns: 1fr;
+      }
+      
+      .summary-stats {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 </head>
 <body>
   <div class="save-status" id="save-status"></div>
@@ -18,112 +878,126 @@
 
     <!-- Daily View Tab -->
     <div id="daily-tab" class="tab-content active">
-      <div class="date-section">
-        <input type="date" id="calendar">
-      </div>
-
-      <div class="stats">
-        <div class="stat-item">
-          <div class="stat-number" id="total-tasks">0</div>
-          <div class="stat-label">Total</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-number" id="completed-tasks">0</div>
-          <div class="stat-label">Completed</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-number" id="remaining-tasks">0</div>
-          <div class="stat-label">Remaining</div>
-        </div>
-      </div>
-
-      <div class="task-input-section">
-        <div class="task-input-form">
-          <input type="text" id="task-title" placeholder="Task title (required)">
-          <textarea id="task-body" placeholder="Task description (optional)"></textarea>
-          <div class="add-task-row">
-            <button id="add-task">Add Task</button>
+      <div class="daily-layout">
+        <div class="left-column">
+          <div class="task-list-section">
+            <div class="task-list-header">
+              <div class="selected-date" id="selected-date">Today's Tasks</div>
+              <div class="task-count" id="task-count">0 tasks</div>
+            </div>
+            <ul id="todo-list"></ul>
           </div>
         </div>
-      </div>
+        
+        <div class="right-column">
+          <div class="date-section">
+            <input type="date" id="calendar">
+          </div>
 
-      <div class="task-list-section">
-        <div class="task-list-header">
-          <div class="selected-date" id="selected-date">Today's Tasks</div>
-          <div class="task-count" id="task-count">0 tasks</div>
+          <div class="stats">
+            <div class="stat-item">
+              <div class="stat-number" id="total-tasks">0</div>
+              <div class="stat-label">Total</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="completed-tasks">0</div>
+              <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="remaining-tasks">0</div>
+              <div class="stat-label">Remaining</div>
+            </div>
+          </div>
+
+          <div class="task-input-section">
+            <div class="task-input-form">
+              <input type="text" id="task-title" placeholder="Task title (required)">
+              <textarea id="task-body" placeholder="Task description (optional)"></textarea>
+              <div class="add-task-row">
+                <button id="add-task">Add Task</button>
+              </div>
+            </div>
+          </div>
         </div>
-        <ul id="todo-list"></ul>
       </div>
     </div>
 
     <!-- Summary View Tab -->
     <div id="summary-tab" class="tab-content">
-      <div class="summary-stats">
-        <div class="stat-item">
-          <div class="stat-number" id="all-total-tasks">0</div>
-          <div class="stat-label">All Tasks</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-number" id="all-completed-tasks">0</div>
-          <div class="stat-label">Completed</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-number" id="all-pending-tasks">0</div>
-          <div class="stat-label">Pending</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-number" id="dates-with-tasks">0</div>
-          <div class="stat-label">Active Dates</div>
-        </div>
-      </div>
+      <div class="summary-layout">
+        <div class="summary-sidebar">
+          <h3 style="margin-top: 0; margin-bottom: 24px; color: #1e293b;">Overview</h3>
+          
+          <div class="summary-stats">
+            <div class="stat-item">
+              <div class="stat-number" id="all-total-tasks">0</div>
+              <div class="stat-label">All Tasks</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="all-completed-tasks">0</div>
+              <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="all-pending-tasks">0</div>
+              <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-number" id="dates-with-tasks">0</div>
+              <div class="stat-label">Active Dates</div>
+            </div>
+          </div>
 
-      <div class="data-controls">
-        <button class="export-btn" onclick="exportData()">Export Data</button>
-        <button class="import-btn" onclick="document.getElementById('import-file').click()">Import Data</button>
-        <input type="file" id="import-file" accept=".json" onchange="importData(event)">
-        <button class="clear-btn" onclick="clearAllData()">Clear All Data</button>
-      </div>
+          <div class="filter-section">
+            <select class="filter-select" id="status-filter" onchange="updateSummaryTable()">
+              <option value="all">All Tasks</option>
+              <option value="completed">Completed</option>
+              <option value="pending">Pending</option>
+            </select>
+            <input type="text" class="search-input" id="search-input" placeholder="Search tasks..." oninput="updateSummaryTable()">
+            <div class="page-size-selector">
+              <span>Show:</span>
+              <select class="page-size-select" id="page-size-select" onchange="changePageSize()">
+                <option value="10">10 per page</option>
+                <option value="25" selected>25 per page</option>
+                <option value="50">50 per page</option>
+                <option value="100">100 per page</option>
+              </select>
+            </div>
+          </div>
 
-      <div class="filter-section">
-        <select class="filter-select" id="status-filter" onchange="updateSummaryTable()">
-          <option value="all">All Tasks</option>
-          <option value="completed">Completed</option>
-          <option value="pending">Pending</option>
-        </select>
-        <input type="text" class="search-input" id="search-input" placeholder="Search tasks..." oninput="updateSummaryTable()">
-        <div class="page-size-selector">
-          <span>Show:</span>
-          <select class="page-size-select" id="page-size-select" onchange="changePageSize()">
-            <option value="10">10 per page</option>
-            <option value="25" selected>25 per page</option>
-            <option value="50">50 per page</option>
-            <option value="100">100 per page</option>
-          </select>
+          <div class="data-controls">
+            <button class="export-btn" onclick="exportData()">Export Data</button>
+            <button class="import-btn" onclick="document.getElementById('import-file').click()">Import Data</button>
+            <input type="file" id="import-file" accept=".json" onchange="importData(event)">
+            <button class="clear-btn" onclick="clearAllData()">Clear All Data</button>
+          </div>
         </div>
-      </div>
 
-      <div class="summary-table-container">
-        <table class="summary-table">
-          <thead>
-            <tr>
-              <th style="width: 120px;">Date</th>
-              <th>Task</th>
-              <th style="width: 100px;">Status</th>
-              <th style="width: 100px;">Created</th>
-              <th style="width: 120px;">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="summary-table-body">
-          </tbody>
-        </table>
-      </div>
+        <div class="summary-main">
+          <div class="summary-table-container">
+            <table class="summary-table">
+              <thead>
+                <tr>
+                  <th style="width: 120px;">Date</th>
+                  <th>Task</th>
+                  <th style="width: 100px;">Status</th>
+                  <th style="width: 100px;">Created</th>
+                  <th style="width: 120px;">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="summary-table-body">
+              </tbody>
+            </table>
+          </div>
 
-      <div class="pagination-container">
-        <div class="pagination-info" id="pagination-info">
-          Showing 0-0 of 0 tasks
-        </div>
-        <div class="pagination-controls" id="pagination-controls">
-          <!-- Pagination buttons will be dynamically generated -->
+          <div class="pagination-container">
+            <div class="pagination-info" id="pagination-info">
+              Showing 0-0 of 0 tasks
+            </div>
+            <div class="pagination-controls" id="pagination-controls">
+              <!-- Pagination buttons will be dynamically generated -->
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -146,6 +1020,511 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
-</body>
-</html>
+  <script>
+    // Application state
+    let tasks = {};
+    let currentDate = new Date().toISOString().split('T')[0];
+    let currentPage = 1;
+    let pageSize = 25;
+    let editingTaskId = null;
+    let editingTaskDate = null;
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', function() {
+      loadTasks();
+      updateCalendar();
+      updateTaskList();
+      updateStats();
+      updateSummaryTab();
+    });
+
+    // Tab switching
+    function switchTab(tabName) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Hide all tab buttons
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Show selected tab content
+      document.getElementById(tabName + '-tab').classList.add('active');
+      
+      // Activate selected tab button
+      event.target.classList.add('active');
+      
+      if (tabName === 'summary') {
+        updateSummaryTab();
+      }
+    }
+
+    // Calendar functionality
+    function updateCalendar() {
+      const calendarInput = document.getElementById('calendar');
+      calendarInput.value = currentDate;
+      calendarInput.addEventListener('change', function() {
+        currentDate = this.value;
+        updateTaskList();
+        updateStats();
+      });
+    }
+
+    // Add new task
+    document.getElementById('add-task').addEventListener('click', function() {
+      const title = document.getElementById('task-title').value.trim();
+      const body = document.getElementById('task-body').value.trim();
+      
+      if (!title) {
+        alert('Please enter a task title');
+        return;
+      }
+      
+      addTask(title, body, currentDate);
+      
+      // Clear inputs
+      document.getElementById('task-title').value = '';
+      document.getElementById('task-body').value = '';
+    });
+
+    // Add task function
+    function addTask(title, body, date) {
+      if (!tasks[date]) {
+        tasks[date] = [];
+      }
+      
+      const task = {
+        id: Date.now() + Math.random(),
+        title: title,
+        body: body,
+        completed: false,
+        createdAt: new Date().toLocaleString()
+      };
+      
+      tasks[date].push(task);
+      saveTasks();
+      updateTaskList();
+      updateStats();
+      updateSummaryTab();
+    }
+
+    // Update task list display
+    function updateTaskList() {
+      const todoList = document.getElementById('todo-list');
+      const selectedDate = document.getElementById('selected-date');
+      const taskCount = document.getElementById('task-count');
+      
+      const dateObj = new Date(currentDate);
+      const formattedDate = dateObj.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+      
+      selectedDate.textContent = formattedDate;
+      
+      const dayTasks = tasks[currentDate] || [];
+      taskCount.textContent = `${dayTasks.length} task${dayTasks.length !== 1 ? 's' : ''}`;
+      
+      todoList.innerHTML = '';
+      
+      if (dayTasks.length === 0) {
+        todoList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📝</div>
+            <div>No tasks for this date</div>
+          </div>
+        `;
+        return;
+      }
+      
+      dayTasks.forEach(task => {
+        const li = document.createElement('li');
+        li.className = 'task-item';
+        li.innerHTML = `
+          <div class="task-content">
+            <div class="task-checkbox ${task.completed ? 'completed' : ''}" onclick="toggleTask('${currentDate}', ${task.id})"></div>
+            <div class="task-text">
+              <div class="task-title ${task.completed ? 'text-decoration: line-through; opacity: 0.6;' : ''}">${task.title}</div>
+              ${task.body ? `<div class="task-description">${task.body}</div>` : ''}
+              <div class="task-time">${task.createdAt}</div>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button class="edit-btn" onclick="editTask('${currentDate}', ${task.id})">Edit</button>
+            <button class="delete-btn" onclick="deleteTask('${currentDate}', ${task.id})">Delete</button>
+          </div>
+        `;
+        todoList.appendChild(li);
+      });
+    }
+
+    // Toggle task completion
+    function toggleTask(date, taskId) {
+      const dayTasks = tasks[date] || [];
+      const task = dayTasks.find(t => t.id === taskId);
+      if (task) {
+        task.completed = !task.completed;
+        saveTasks();
+        updateTaskList();
+        updateStats();
+        updateSummaryTab();
+      }
+    }
+
+    // Delete task
+    function deleteTask(date, taskId) {
+      if (confirm('Are you sure you want to delete this task?')) {
+        tasks[date] = tasks[date].filter(t => t.id !== taskId);
+        if (tasks[date].length === 0) {
+          delete tasks[date];
+        }
+        saveTasks();
+        updateTaskList();
+        updateStats();
+        updateSummaryTab();
+      }
+    }
+
+    // Edit task
+    function editTask(date, taskId) {
+      const task = tasks[date].find(t => t.id === taskId);
+      if (!task) return;
+      
+      editingTaskId = taskId;
+      editingTaskDate = date;
+      
+      document.getElementById('edit-title').value = task.title;
+      document.getElementById('edit-description').value = task.body || '';
+      
+      const modal = document.getElementById('edit-modal');
+      modal.classList.add('show');
+      modal.style.display = 'flex';
+    }
+
+    // Save edited task
+    function saveEditedTask() {
+      const title = document.getElementById('edit-title').value.trim();
+      const description = document.getElementById('edit-description').value.trim();
+      
+      if (!title) {
+        alert('Please enter a task title');
+        return;
+      }
+      
+      const task = tasks[editingTaskDate].find(t => t.id === editingTaskId);
+      if (task) {
+        task.title = title;
+        task.body = description;
+        saveTasks();
+        updateTaskList();
+        updateStats();
+        updateSummaryTab();
+      }
+      
+      closeEditModal();
+    }
+
+    // Close edit modal
+    function closeEditModal() {
+      const modal = document.getElementById('edit-modal');
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+      editingTaskId = null;
+      editingTaskDate = null;
+    }
+
+    // Update statistics
+    function updateStats() {
+      const dayTasks = tasks[currentDate] || [];
+      const completed = dayTasks.filter(task => task.completed).length;
+      const total = dayTasks.length;
+      const remaining = total - completed;
+      
+      document.getElementById('total-tasks').textContent = total;
+      document.getElementById('completed-tasks').textContent = completed;
+      document.getElementById('remaining-tasks').textContent = remaining;
+    }
+
+    // Update summary tab
+    function updateSummaryTab() {
+      updateSummaryStats();
+      updateSummaryTable();
+    }
+
+    // Update summary statistics
+    function updateSummaryStats() {
+      let totalTasks = 0;
+      let completedTasks = 0;
+      let pendingTasks = 0;
+      let activeDates = Object.keys(tasks).length;
+      
+      Object.values(tasks).forEach(dayTasks => {
+        totalTasks += dayTasks.length;
+        completedTasks += dayTasks.filter(task => task.completed).length;
+        pendingTasks += dayTasks.filter(task => !task.completed).length;
+      });
+      
+      document.getElementById('all-total-tasks').textContent = totalTasks;
+      document.getElementById('all-completed-tasks').textContent = completedTasks;
+      document.getElementById('all-pending-tasks').textContent = pendingTasks;
+      document.getElementById('dates-with-tasks').textContent = activeDates;
+    }
+
+    // Update summary table
+    function updateSummaryTable() {
+      const statusFilter = document.getElementById('status-filter').value;
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+      
+      let allTasks = [];
+      
+      // Collect all tasks
+      Object.keys(tasks).forEach(date => {
+        tasks[date].forEach(task => {
+          allTasks.push({
+            ...task,
+            date: date
+          });
+        });
+      });
+      
+      // Filter tasks
+      let filteredTasks = allTasks.filter(task => {
+        const matchesStatus = statusFilter === 'all' || 
+          (statusFilter === 'completed' && task.completed) ||
+          (statusFilter === 'pending' && !task.completed);
+          
+        const matchesSearch = !searchTerm || 
+          task.title.toLowerCase().includes(searchTerm) ||
+          (task.body && task.body.toLowerCase().includes(searchTerm));
+          
+        return matchesStatus && matchesSearch;
+      });
+      
+      // Sort by date (newest first)
+      filteredTasks.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      // Pagination
+      const totalTasks = filteredTasks.length;
+      const totalPages = Math.ceil(totalTasks / pageSize);
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, totalTasks);
+      const paginatedTasks = filteredTasks.slice(startIndex, endIndex);
+      
+      // Update table
+      const tbody = document.getElementById('summary-table-body');
+      tbody.innerHTML = '';
+      
+      if (paginatedTasks.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 40px; color: #9ca3af;">
+              No tasks found
+            </td>
+          </tr>
+        `;
+      } else {
+        paginatedTasks.forEach(task => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>
+              <span class="date-badge">${new Date(task.date).toLocaleDateString()}</span>
+            </td>
+            <td>
+              <div class="task-summary-title">${task.title}</div>
+              ${task.body ? `<div class="task-summary-preview">${task.body}</div>` : ''}
+            </td>
+            <td>
+              <span class="status-badge ${task.completed ? 'status-completed' : 'status-pending'}">
+                ${task.completed ? 'Completed' : 'Pending'}
+              </span>
+            </td>
+            <td style="font-size: 12px; color: #6b7280;">${task.createdAt}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="edit-btn" onclick="editTask('${task.date}', ${task.id})">Edit</button>
+                <button class="delete-btn" onclick="deleteTask('${task.date}', ${task.id})">Delete</button>
+              </div>
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      }
+      
+      // Update pagination info
+      document.getElementById('pagination-info').textContent = 
+        `Showing ${startIndex + 1}-${endIndex} of ${totalTasks} tasks`;
+      
+      // Update pagination controls
+      updatePaginationControls(totalPages);
+    }
+
+    // Update pagination controls
+    function updatePaginationControls(totalPages) {
+      const container = document.getElementById('pagination-controls');
+      container.innerHTML = '';
+      
+      if (totalPages <= 1) return;
+      
+      // Previous button
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'pagination-btn';
+      prevBtn.textContent = '‹ Previous';
+      prevBtn.disabled = currentPage === 1;
+      prevBtn.onclick = () => {
+        if (currentPage > 1) {
+          currentPage--;
+          updateSummaryTable();
+        }
+      };
+      container.appendChild(prevBtn);
+      
+      // Page numbers
+      const maxVisible = 5;
+      let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+      let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+      
+      if (endPage - startPage + 1 < maxVisible) {
+        startPage = Math.max(1, endPage - maxVisible + 1);
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+        pageBtn.textContent = i;
+        pageBtn.onclick = () => {
+          currentPage = i;
+          updateSummaryTable();
+        };
+        container.appendChild(pageBtn);
+      }
+      
+      // Next button
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'pagination-btn';
+      nextBtn.textContent = 'Next ›';
+      nextBtn.disabled = currentPage === totalPages;
+      nextBtn.onclick = () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          updateSummaryTable();
+        }
+      };
+      container.appendChild(nextBtn);
+    }
+
+    // Change page size
+    function changePageSize() {
+      pageSize = parseInt(document.getElementById('page-size-select').value);
+      currentPage = 1;
+      updateSummaryTable();
+    }
+
+    // Export data
+    function exportData() {
+      const dataStr = JSON.stringify(tasks, null, 2);
+      const dataBlob = new Blob([dataStr], {type: 'application/json'});
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'tasks_export.json';
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Import data
+    function importData(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedTasks = JSON.parse(e.target.result);
+          if (confirm('This will replace all existing tasks. Continue?')) {
+            tasks = importedTasks;
+            saveTasks();
+            updateTaskList();
+            updateStats();
+            updateSummaryTab();
+            alert('Tasks imported successfully!');
+          }
+        } catch (error) {
+          alert('Error importing tasks. Please check the file format.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    // Clear all data
+    function clearAllData() {
+      if (confirm('Are you sure you want to delete all tasks? This cannot be undone.')) {
+        tasks = {};
+        saveTasks();
+        updateTaskList();
+        updateStats();
+        updateSummaryTab();
+        alert('All tasks have been cleared.');
+      }
+    }
+
+    // Save tasks to localStorage
+    function saveTasks() {
+      try {
+        const tasksJson = JSON.stringify(tasks);
+        // Note: In a real Electron app, this would use the IPC to save to CSV
+        // For demo purposes, we'll use localStorage
+        if (typeof Storage !== 'undefined') {
+          localStorage.setItem('tasks', tasksJson);
+        }
+        showSaveStatus('Tasks saved successfully', false);
+      } catch (error) {
+        console.error('Error saving tasks:', error);
+        showSaveStatus('Error saving tasks', true);
+      }
+    }
+
+    // Load tasks from localStorage
+    function loadTasks() {
+      try {
+        if (typeof Storage !== 'undefined') {
+          const tasksJson = localStorage.getItem('tasks');
+          if (tasksJson) {
+            tasks = JSON.parse(tasksJson);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading tasks:', error);
+        tasks = {};
+      }
+    }
+
+    // Show save status
+    function showSaveStatus(message, isError = false) {
+      const saveStatus = document.getElementById('save-status');
+      saveStatus.textContent = message;
+      saveStatus.className = `save-status ${isError ? 'error' : ''} show`;
+      
+      setTimeout(() => {
+        saveStatus.classList.remove('show');
+      }, 2000);
+    }
+
+    // Handle Enter key in input fields
+    document.getElementById('task-title').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        document.getElementById('add-task').click();
+      }
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('edit-modal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeEditModal();
+      }
+    });
+  </script>
